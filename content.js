@@ -46,12 +46,16 @@ const readSingleElement = (element) => {
   synth.speak(currState.utterance);
 };
 
-const readContinuous = (firstElement) => {
+const readContinuous = (nextElement) => {
   if (currState?.utterance) {
     currState.utterance.removeEventListener("end");
   }
-  currState.target = firstElement;
-  const text = firstElement.textContent
+  currState.target = nextElement;
+  nextElement.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+  const text = nextElement.textContent
   currState.utterance = new SpeechSynthesisUtterance(text);
   currState.target.style.background = "rgba(255, 255, 0, .3)";
   currState.utterance.addEventListener("end", () => {
