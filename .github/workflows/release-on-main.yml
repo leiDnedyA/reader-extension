@@ -43,7 +43,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
-          release_name: "Automated build ${{ steps.meta.outputs.tag }}"
+          release_name: "Web Reader Extension -- ${{ steps.meta.outputs.tag }}"
           body: |
             Automated release from commit ${{ github.sha }} on ${{ github.event.head_commit.timestamp }}
           draft: false
