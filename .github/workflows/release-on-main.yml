@@ -1,0 +1,60 @@
+name: Release on main updates
+
+on:
+  push:
+    branches: [ main ]
+
+# Needed so the workflow can create releases and upload assets
+permissions:
+  contents: write
+
+concurrency:
+  group: release-on-main
+  cancel-in-progress: false
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute tag and asset names
+        id: meta
+        run: |
+          SHA_SHORT="$(git rev-parse --short HEAD)"
+          DATE="$(date -u +'%Y%m%d-%H%M%S')"
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          TAG="rel-${DATE}-${SHA_SHORT}"
+          ASSET="${REPO_NAME}-${DATE}-${SHA_SHORT}.zip"
+          echo "tag=${TAG}"   >> "$GITHUB_OUTPUT"
+          echo "asset=${ASSET}" >> "$GITHUB_OUTPUT"
+
+      - name: Create zip from HEAD (tracked files only)
+        run: |
+          git archive --format=zip -o "${{ steps.meta.outputs.asset }}" HEAD
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          release_name: "Automated build ${{ steps.meta.outputs.tag }}"
+          body: |
+            Automated release from commit ${{ github.sha }} on ${{ github.event.head_commit.timestamp }}
+          draft: false
+          prerelease: false
+
+      - name: Upload asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./${{ steps.meta.outputs.asset }}
+          asset_name: ${{ steps.meta.outputs.asset }}
+          asset_content_type: application/zip
